@@ -88,4 +88,4 @@ class EmployeeRecord(models.Model):
 
     def __str__(self):
         ts = self.date.strftime('%Y-%m-%d %H:%M')
-        return f"{self.payment_type.file} – {self.patient_name} ({ts})"
+        return f"{self.payment_type.file} – {self.payment_type.file.patient_name} ({ts})"
