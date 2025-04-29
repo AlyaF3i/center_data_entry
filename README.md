@@ -25,8 +25,6 @@ A simple Django application for managing patient session records, with Excel imp
 
 ## 2. Configure Settings
 
-
-
 1. **Run Ngrok**:
 
     ```Powershell

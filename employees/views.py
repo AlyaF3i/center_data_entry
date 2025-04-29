@@ -7,6 +7,7 @@ from .forms import EmployeeForm
 from django.contrib.auth import logout
 from django.views.decorators.http import require_GET
 from .models import File, PaymentType, EmployeeRecord
+from datetime import datetime, timedelta
 
 @login_required
 def create_record(request):
@@ -40,31 +41,47 @@ def edit_record(request, pk):
 def list_records(request):
     qs = EmployeeRecord.objects.filter(created_by=request.user)
 
-    file_filter = request.GET.get('file')
-    place_filter = request.GET.get('place')
+    # Existing filters
+    file_filter      = request.GET.get('file')
+    place_filter     = request.GET.get('place')
     insurance_filter = request.GET.get('insurance')
 
     if file_filter:
-        qs = qs.filter(file=file_filter)
+        qs = qs.filter(payment_type__file__number=file_filter)
     if place_filter:
         qs = qs.filter(service_place__icontains=place_filter)
     if insurance_filter:
-        qs = qs.filter(insurance=insurance_filter)
+        qs = qs.filter(payment_type__insurance=insurance_filter)
+
+    # New start/end date filters (expects YYYY-MM-DD)
+    start_str = request.GET.get('start')
+    end_str   = request.GET.get('end')
+    if start_str:
+        try:
+            start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
+            qs = qs.filter(date__date__gte=start_date)
+        except ValueError:
+            pass
+    if end_str:
+        try:
+            end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
+            qs = qs.filter(date__date__lte=end_date)
+        except ValueError:
+            pass
 
     # Determine editable records (within 1 hour)
     cutoff = timezone.now() - timedelta(hours=1)
-    editable_pks = list(
-        qs.filter(date__gte=cutoff)
-          .values_list('pk', flat=True)
-    )
+    editable_pks = list(qs.filter(date__gte=cutoff).values_list('pk', flat=True))
 
     records = qs.order_by('-date')
     return render(request, 'employees/employee_list.html', {
-        'records':       records,
-        'file':          file_filter or '',
-        'place':         place_filter or '',
-        'insurance':     insurance_filter or '',
-        'editable_pks':  editable_pks,
+        'records':    records,
+        'file':       file_filter or '',
+        'place':      place_filter or '',
+        'insurance':  insurance_filter or '',
+        'start':      start_str or '',
+        'end':        end_str or '',
+        'editable_pks': editable_pks,
     })
     
 @login_required
@@ -82,7 +99,7 @@ def get_payment_types(request):
     """
     file_number = request.GET.get('file_number')
     data = []
-
+    
     try:
         f = File.objects.get(number=file_number)
     except File.DoesNotExist:

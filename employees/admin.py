@@ -21,7 +21,7 @@ class PaymentTypeAdmin(admin.ModelAdmin):
 class EmployeeRecordAdmin(admin.ModelAdmin):
     list_display   = (
         'payment_type', 'location', 'is_session',
-        'patient_name', 'duration_minutes',
+        'duration_minutes',
         'date', 'created_by'
     )
     list_filter    = (
@@ -35,7 +35,6 @@ class EmployeeRecordAdmin(admin.ModelAdmin):
     search_fields  = (
         'payment_type__file__number',
         'location',
-        'patient_name',
         'created_by__username',
     )
     date_hierarchy = 'date'

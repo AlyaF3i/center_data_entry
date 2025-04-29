@@ -1,49 +1,77 @@
 {% extends 'base.html' %}
 {% block title %}My Records{% endblock %}
 {% block content %}
-<form method="get" class="form-inline mb-4">
-  <!-- File # -->
-  <div class="form-group mr-2">
-    <label for="id_file" class="mr-1">File #</label>
-    <input
-      type="number"
-      id="id_file"
-      name="file"
-      value="{{ file }}"
-      class="form-control"
-      placeholder="File #"
-    >
-  </div>
+<form method="get" class="mb-4">
+  <div class="card p-3">
+    <div class="form-row align-items-end">
+      <!-- Start Date -->
+      <div class="form-group col-md-2">
+        <label for="id_start">Start Date</label>
+        <input type="date"
+               id="id_start"
+               name="start"
+               value="{{ start }}"
+               class="form-control">
+      </div>
 
-  <!-- Place -->
-  <div class="form-group mr-2">
-    <label for="id_place" class="mr-1">Place</label>
-    <input
-      type="text"
-      id="id_place"
-      name="place"
-      value="{{ place }}"
-      class="form-control"
-      placeholder="Service place"
-    >
-  </div>
+      <!-- End Date -->
+      <div class="form-group col-md-2">
+        <label for="id_end">End Date</label>
+        <input type="date"
+               id="id_end"
+               name="end"
+               value="{{ end }}"
+               class="form-control">
+      </div>
 
-  <!-- Insurance -->
-  <div class="form-group mr-2">
-    <label for="id_insurance" class="mr-1">Insurance</label>
-    <select id="id_insurance" name="insurance" class="form-control">
-      <option value="" {% if not insurance %}selected{% endif %}>All</option>
-      <option value="Thiqa"    {% if insurance == "Thiqa"    %}selected{% endif %}>Thiqa</option>
-      <option value="Enhanced" {% if insurance == "Enhanced" %}selected{% endif %}>Enhanced</option>
-      <option value="Cash"     {% if insurance == "Cash"     %}selected{% endif %}>Cash</option>
-      <option value="Free"     {% if insurance == "Free"     %}selected{% endif %}>Free</option>
-    </select>
-  </div>
+      <!-- File # -->
+      <div class="form-group col-md-2">
+        <label for="id_file">File #</label>
+        <input type="number"
+               id="id_file"
+               name="file"
+               value="{{ file }}"
+               class="form-control"
+               placeholder="e.g. 1234">
+      </div>
 
-  <button type="submit" class="btn btn-primary mr-2">Filter</button>
-  <a href="{% url 'record_list' %}" class="btn btn-secondary">Clear</a>
+      <!-- Place -->
+      <div class="form-group col-md-2">
+        <label for="id_place">Place</label>
+        <input type="text"
+               id="id_place"
+               name="place"
+               value="{{ place }}"
+               class="form-control"
+               placeholder="Abu Dhabi">
+      </div>
+
+      <!-- Insurance -->
+      <div class="form-group col-md-2">
+        <label for="id_insurance">Insurance</label>
+        <select id="id_insurance"
+                name="insurance"
+                class="form-control">
+          <option value="" {% if not insurance %}selected{% endif %}>All</option>
+          <option value="Thiqa"    {% if insurance == "Thiqa"    %}selected{% endif %}>Thiqa</option>
+          <option value="Enhanced" {% if insurance == "Enhanced" %}selected{% endif %}>Enhanced</option>
+          <option value="Cash"     {% if insurance == "Cash"     %}selected{% endif %}>Cash</option>
+          <option value="Free"     {% if insurance == "Free"     %}selected{% endif %}>Free</option>
+        </select>
+      </div>
+
+      <!-- Buttons -->
+      <div class="form-group col-md-2 text-right">
+        <button type="submit" class="btn btn-primary mr-2">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+        <a href="{% url 'record_list' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-times-circle"></i> Clear
+        </a>
+      </div>
+    </div>
+  </div>
 </form>
-
   <div class="table-responsive shadow-sm">
     <table class="table table-hover">
       <thead class="thead-light">
@@ -67,7 +95,7 @@
           <td>{{ r.date|date:"Y-m-d H:i" }}</td>
           <td>{{ r.duration_minutes }}</td>
           <td>{{ r.is_session|yesno:"Yes,No" }}</td>
-          <td>{{ r.patient_name }}</td>
+          <td>{{ r.payment_type.file.patient_name|title }}</td>
           <td>{{ r.payment_type.service_type }}</td>
           <td>{{ r.payment_type.insurance }}</td>
           <td>{{ r.remarks|default:"—" }}</td>

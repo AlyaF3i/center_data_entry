@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.db.models import Sum
+from django.utils import timezone
 
 class File(models.Model):
     number       = models.IntegerField("File Number", unique=True)
@@ -13,6 +14,8 @@ class File(models.Model):
 class PaymentType(models.Model):
     CASH = 'Cash'
 
+    CASH_LIMIT = 45 # days till cash expire
+    
     file           = models.ForeignKey(
         File, on_delete=models.CASCADE, related_name='payment_types'
     )
@@ -56,7 +59,12 @@ class PaymentType(models.Model):
         if self.insurance == self.CASH:
             rem = self.sessions_remaining()
             tot = self.total_sessions()
-            return f"{self.file} • {self.insurance}/{self.service_type} ({rem}/{tot})"
+            days_passed = (timezone.now() - self.updated_at).days
+            if days_passed > self.CASH_LIMIT:
+                status = "Expired"
+            else:
+                status = f"{self.CASH_LIMIT - days_passed}d"
+            return f"{self.file} • {self.insurance}/{self.service_type} ({rem}/{tot}) ({status})"
         return f"{self.file} • {self.insurance}/{self.service_type} (Unlimited)"
 
 
@@ -68,7 +76,7 @@ class EmployeeRecord(models.Model):
     is_session       = models.BooleanField(
         "Session (True=session, False=follow-up)", default=True
     )
-    patient_name     = models.CharField("Patient Name", max_length=100)
+    # patient_name     = models.CharField("Patient Name", max_length=100)
     duration_minutes = models.PositiveIntegerField("Duration (minutes)")
     remarks          = models.TextField("Remarks", blank=True)
     date             = models.DateTimeField(
