@@ -2,13 +2,53 @@ from django.db import models
 from django.conf import settings
 from django.db.models import Sum
 from django.utils import timezone
+from django.dispatch import receiver
+from django.db.models.signals import post_save
+
+class Specialization(models.Model):
+    name = models.CharField("Specialization", max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+class EmployeeProfile(models.Model):
+    user            = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='employee_profile'
+    )
+    specializations = models.ManyToManyField(
+        Specialization,
+        blank=True,
+        help_text="Select one or more specializations for this employee"
+    )
+
+    def __str__(self):
+        return f"Profile: {self.user.username}"
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_employee_profile(sender, instance, created, **kwargs):
+    if created:
+        EmployeeProfile.objects.create(user=instance)
+
+class Group(models.Model):
+    name = models.CharField("Group Name", max_length=100)
+    type = models.IntegerField("Type", default=0)
+
+    def __str__(self):
+        return self.name
 
 class File(models.Model):
     number       = models.IntegerField("File Number", unique=True)
     patient_name = models.CharField("Patient Name", max_length=100)
+    group        = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        related_name='files'
+    )
 
     def __str__(self):
-        return f"File {self.number} – {self.patient_name}"
+        return f"File {self.number} – {self.patient_name} (Group: {self.group.name})"
 
 
 class PaymentType(models.Model):

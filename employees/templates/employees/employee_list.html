@@ -81,6 +81,7 @@
           <th>Duration</th>
           <th>Session?</th>
           <th>Patient</th>
+          <th>Location</th>
           <th>Service</th>
           <th>Insurance</th>
           <th>Remarks</th>
@@ -96,6 +97,7 @@
           <td>{{ r.duration_minutes }}</td>
           <td>{{ r.is_session|yesno:"Yes,No" }}</td>
           <td>{{ r.payment_type.file.patient_name|title }}</td>
+          <td>{{ r.location }}</td>
           <td>{{ r.payment_type.service_type }}</td>
           <td>{{ r.payment_type.insurance }}</td>
           <td>{{ r.remarks|default:"—" }}</td>

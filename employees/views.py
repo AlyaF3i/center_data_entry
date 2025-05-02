@@ -6,21 +6,28 @@ from datetime import timedelta
 from .forms import EmployeeForm
 from django.contrib.auth import logout
 from django.views.decorators.http import require_GET
-from .models import File, PaymentType, EmployeeRecord
+from .models import File, PaymentType, EmployeeRecord, Group
 from datetime import datetime, timedelta
+from django.db.models import Q
 
 @login_required
 def create_record(request):
     if request.method == 'POST':
         form = EmployeeForm(request.POST)
         if form.is_valid():
-            record = form.save(commit=False)
-            record.created_by = request.user
-            record.save()
+            rec = form.save(commit=False)
+            rec.created_by = request.user
+            rec.save()
             return redirect('record_list')
     else:
         form = EmployeeForm()
-    return render(request, 'employees/employee_form.html', {'form': form})
+
+    # Pass all groups for the “By Patient” selector
+    groups = Group.objects.all()
+    return render(request, 'employees/employee_form.html', {
+        'form':   form,
+        'groups': groups,
+    })
 
 @login_required
 def edit_record(request, pk):
@@ -124,3 +131,31 @@ def get_payment_types(request):
         })
 
     return JsonResponse({'payment_types': data})
+
+@require_GET
+@login_required
+def get_files(request):
+    """
+    AJAX endpoint for Select2:
+    – Expects ?group_id=<id>&q=<search_term>
+    – Returns one entry per File.number in that group
+    """
+    group_id = request.GET.get('group_id')
+    q        = request.GET.get('q', '').strip()
+
+    qs = File.objects.filter(group_id=group_id)
+    if q:
+        qs = qs.filter(
+            Q(number__icontains=q) |
+            Q(patient_name__icontains=q)
+        )
+
+    data = []
+    for f in qs.order_by('number')[:50]:
+        data.append({
+            # Use the File.number as the “id” so it hooks into your loadPaymentTypes(fn)
+            'id': f.number,
+            'text': f"#{f.number} – {f.patient_name}"
+        })
+
+    return JsonResponse({'results': data})

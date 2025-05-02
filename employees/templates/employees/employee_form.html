@@ -1,87 +1,221 @@
 {% extends 'base.html' %}
-{% block title %}
-  {% if form.instance.pk %}Edit{% else %}New{% endif %} Record
-{% endblock %}
+{% block title %}New Record{% endblock %}
 
 {% block content %}
-  <h2 class="mb-4">{% if form.instance.pk %}Edit{% else %}New{% endif %} Record</h2>
-  <form method="post" id="record-form" novalidate>
-    {% csrf_token %}
+<h2 class="mb-4">New Record</h2>
+<form method="post" id="record-form" novalidate>
+  {% csrf_token %}
 
-    <!-- STEP 1: File Number -->
-    <div id="step-file">
-      <div class="form-group col-md-3 p-0">
-        <label for="id_file_number">File Number</label>
-        <input type="number" id="id_file_number" class="form-control" placeholder="Enter file number">
+  <!-- CHOOSE HOW TO LOOK UP PATIENT -->
+  <div class="form-group">
+    <label>Lookup by:</label><br>
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="lookup" id="by-file" value="file" checked>
+      <label class="form-check-label" for="by-file">File Number</label>
+    </div>
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="lookup" id="by-patient" value="patient">
+      <label class="form-check-label" for="by-patient">Patient Directory</label>
+    </div>
+  </div>
+
+  <!-- BY FILE -->
+  <div id="method-file" class="mb-3">
+    <label for="id_file_number">File Number</label>
+    <input type="number" id="id_file_number" class="form-control" placeholder="Enter file number">
+    <button type="button" id="btn-load-services" class="btn btn-primary mt-2">Load Services</button>
+    <div id="file-error" class="text-danger mt-1" style="display:none;">No such File.</div>
+  </div>
+
+  <!-- BY PATIENT DIRECTORY -->
+  <div id="method-patient" class="mb-3" style="display:none;">
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="id_group">Group</label>
+        <select id="id_group" class="form-control">
+          <option value="">Select group…</option>
+          {% for grp in groups %}
+            <option value="{{ grp.id }}">{{ grp.name }}</option>
+          {% endfor %}
+        </select>
       </div>
-      <button type="button" id="btn-load-services" class="btn btn-primary mt-2">
-        Load Services
-      </button>
-      <div id="file-error" class="text-danger mt-2" style="display:none;">
-        No such File number.
+      <div class="form-group col-md-6">
+        <label for="id_patient_search">Search patient</label>
+        <select id="id_patient_search" class="form-control select2" style="width:100%" disabled></select>
       </div>
     </div>
+    <!-- Fancy grid of cards -->
+    <div id="patient-list" class="row mt-3" style="display:none;"></div>
+  </div>
 
-    <!-- STEP 2: rest of form, hidden until payment_types loaded -->
-    <div id="step-form-fields" style="display:none; margin-top:1rem;">
-      <div class="form-group">
-        <label for="id_payment_type">Payment (File • Ins./Service • Remaining)</label>
-        <select name="payment_type" id="id_payment_type" class="form-control"></select>
-      </div>
-
-      <div class="form-check mb-3">
-        {{ form.is_session }}
-        {{ form.is_session.label_tag }}
-      </div>
-
-      <div class="form-group">
-        {{ form.location.label_tag }}
-        {{ form.location }}
-      </div>
-
-      <div class="form-group">
-        {{ form.patient_name.label_tag }}
-        {{ form.patient_name }}
-      </div>
-
-      <div class="form-group">
-        {{ form.duration_minutes.label_tag }}
-        {{ form.duration_minutes }}
-      </div>
-
-      <div class="form-group">
-        {{ form.remarks.label_tag }}
-        {{ form.remarks }}
-      </div>
-
-      <button type="submit" class="btn btn-success">Save</button>
-      <a href="{% url 'record_list' %}" class="btn btn-secondary ml-2">Cancel</a>
+  <!-- COMMON FORM FIELDS (hidden until a file is selected) -->
+  <div id="form-fields" style="display:none;">
+    <div class="form-group">
+      <label for="id_payment_type">Payment Type</label>
+      <select name="payment_type" id="id_payment_type" class="form-control"></select>
     </div>
-  </form>
 
-  <script>
-    document.getElementById('btn-load-services').onclick = function() {
-      const fileNum = document.getElementById('id_file_number').value;
-      const errorDiv = document.getElementById('file-error');
-      fetch(`/ajax/payment-types/?file_number=${fileNum}`)
-        .then(resp => resp.json())
-        .then(data => {
-          const sel = document.getElementById('id_payment_type');
-          sel.innerHTML = '';
-          if (!data.payment_types.length) {
-            errorDiv.style.display = 'block';
-            return;
-          }
-          errorDiv.style.display = 'none';
-          data.payment_types.forEach(pt => {
-            const opt = document.createElement('option');
-            opt.value = pt.id;
-            opt.text = pt.label;
-            sel.appendChild(opt);
-          });
-          document.getElementById('step-file').style.display = 'none';
-          document.getElementById('step-form-fields').style.display = 'block';
+    <div class="form-group">
+      {{ form.location.label_tag }}
+      {{ form.location }}
+    </div>
+    <div class="form-check mb-3">
+      {{ form.is_session }} {{ form.is_session.label_tag }}
+    </div>
+    <div class="form-group">
+      {{ form.patient_name.label_tag }}
+      {{ form.patient_name }}
+    </div>
+    <div class="form-group">
+      {{ form.duration_minutes.label_tag }}
+      {{ form.duration_minutes }}
+    </div>
+    <div class="form-group">
+      {{ form.remarks.label_tag }}
+      {{ form.remarks }}
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a href="{% url 'record_list' %}" class="btn btn-secondary ml-2">Cancel</a>
+  </div>
+</form>
+
+<script>
+  // Toggle lookup methods
+  document.querySelectorAll('input[name="lookup"]').forEach(radio =>
+    radio.addEventListener('change', () => {
+      document.getElementById('method-file').style.display =
+        radio.id === 'by-file' && radio.checked ? 'block' : 'none';
+      document.getElementById('method-patient').style.display =
+        radio.id === 'by-patient' && radio.checked ? 'block' : 'none';
+      if (radio.id === 'by-patient' && radio.checked) {
+        $('#patient-list').hide();
+        $('#form-fields').hide();
+      }
+    })
+  );
+
+  // Shared loader for payment types
+  function loadPaymentTypes(fileNum) {
+    fetch(`/ajax/payment-types/?file_number=${fileNum}`)
+      .then(r => r.json())
+      .then(data => {
+        const sel = document.getElementById('id_payment_type');
+        sel.innerHTML = '';
+        data.payment_types.forEach(pt => {
+          const o = new Option(pt.label, pt.id);
+          sel.add(o);
         });
-    };
-  </script>
+        document.getElementById('form-fields').style.display = 'block';
+      });
+  }
+
+  // File-lookup flow
+  document.getElementById('btn-load-services').onclick = () => {
+    const fn = document.getElementById('id_file_number').value;
+    const err = document.getElementById('file-error');
+    fetch(`/ajax/payment-types/?file_number=${fn}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.payment_types.length) {
+          err.style.display = 'block';
+        } else {
+          err.style.display = 'none';
+          loadPaymentTypes(fn);
+        }
+      });
+  };
+
+  // Enable/disable patient search when group changes, and set default location
+  $('#id_group').on('change', function() {
+    const gid = $(this).val();
+    const groupName = $('#id_group option:selected').text();
+    const $ps = $('#id_patient_search');
+
+    // Set location input to selected group name (editable)
+    $('#id_location').val(groupName);
+
+    if (gid) {
+      $ps.prop('disabled', false).val(null).trigger('change');
+      $('#patient-list').empty().show();
+      fetchAndListPatients();
+    } else {
+      $ps.prop('disabled', true).val(null).trigger('change');
+      $('#patient-list').hide();
+    }
+  });
+
+  // Fetch & render patient list as cards
+  function fetchAndListPatients() {
+    const gid = $('#id_group').val();
+    const q   = $('.select2-search__field').val() || '';
+    if (!gid) return;
+    $.ajax({
+      url: "{% url 'get_files' %}",
+      data: { group_id: gid, q: q },
+      dataType: 'json'
+    }).done(data => {
+      const $grid = $('#patient-list').empty().show();
+      if (!data.results.length) {
+        $grid.append('<div class="col-12"><div class="alert alert-warning">No patients found.</div></div>');
+        return;
+      }
+      data.results.forEach(item => {
+        const card = $(`
+          <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+              <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 class="card-title mb-1">${item.text}</h5>
+                  <p class="card-subtitle text-muted small">File #${item.id}</p>
+                </div>
+                <button type="button" class="btn btn-sm btn-primary select-btn">
+                  Select
+                </button>
+              </div>
+            </div>
+          </div>
+        `);
+        card.find('.select-btn').on('click', () => loadPaymentTypes(item.id));
+        $grid.append(card);
+      });
+    });
+  }
+
+  // Patient-directory flow with Select2
+  $('#id_patient_search').select2({
+    placeholder: 'Search by ID or name',
+    allowClear: true,
+    minimumInputLength: 0,
+    ajax: {
+      url: "{% url 'get_files' %}",
+      dataType: 'json',
+      delay: 250,
+      data: params => ({
+        group_id: $('#id_group').val(),
+        q:        params.term || ''
+      }),
+      processResults: data => ({ results: data.results }),
+      cache: true
+    }
+  })
+  .on('select2:open', function() {
+    // Load all on open
+    $('.select2-search__field').val('').trigger('input');
+    fetchAndListPatients();
+  })
+  .on('select2:select', function(e) {
+    loadPaymentTypes(e.params.data.id);
+  })
+  .on('select2:clear', function() {
+    $('#patient-list').hide();
+    $('#form-fields').hide();
+  })
+  ;
+
+// Update grid on dropdown search input
+  $(document).on('input', '.select2-search__field', function() {
+    fetchAndListPatients();
+  });
+</script>
 {% endblock %}
