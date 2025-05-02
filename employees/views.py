@@ -46,7 +46,8 @@ def edit_record(request, pk):
 
 @login_required
 def list_records(request):
-    qs = EmployeeRecord.objects.filter(created_by=request.user)
+    if not request.user.is_super:
+        qs = EmployeeRecord.objects.filter(created_by=request.user)
 
     # Existing filters
     file_filter      = request.GET.get('file')
@@ -99,37 +100,27 @@ def logout_view(request):
 @require_GET
 @login_required
 def get_payment_types(request):
-    """
-    Given ?file_number=123, return a single entry for each
-    unique (service_type, insurance) under that File, choosing
-    the most recent PaymentType as the label.
-    """
     file_number = request.GET.get('file_number')
-    data = []
-    
     try:
         f = File.objects.get(number=file_number)
     except File.DoesNotExist:
         return JsonResponse({'payment_types': []})
 
-    # Order so that newest for each pair comes first
-    pts = (
-        PaymentType.objects
-        .filter(file=f)
-        .order_by('service_type', 'insurance', '-created_at')
-    )
+    pts = PaymentType.objects.filter(file=f)
+    # gather user specs
+    specs = request.user.employee_profile.specializations.values_list('name', flat=True)
 
-    seen = set()
+    pts = pts.filter(service_type__specializations__name__in=specs)
+
+    # dedupe and return
+    pts = pts.order_by('service_type__code', 'insurance', '-created_at')
+    seen, data = set(), []
     for pt in pts:
-        key = (pt.service_type, pt.insurance)
+        key = (pt.service_type.code, pt.insurance)
         if key in seen:
             continue
         seen.add(key)
-        data.append({
-            'id':    pt.id,
-            'label': str(pt),
-        })
-
+        data.append({'id': pt.id, 'label': str(pt)})
     return JsonResponse({'payment_types': data})
 
 @require_GET

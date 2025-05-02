@@ -1,63 +1,100 @@
+# employees/management/commands/import_sheet.py
+
 import pandas as pd
 from tqdm import tqdm
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from employees.models import Group, File, PaymentType
+
+from employees.models import (
+    Group,
+    File,
+    ServiceType,
+    PaymentType,
+    Specialization,
+)
 
 User = get_user_model()
 
-GROUP_NAMES = ['Center', 'Almadar', "Teddy'S Inn", 'Aldana', 'Alsomow', 'Alshiam ', 'Little Regent', 'Belvedere British', 'Manor Hall International ', 'Bedaya Center']
+GROUP_NAMES = [
+    'Center','Almadar',"Teddy'S Inn",'Aldana','Alsomow',
+    'Alshiam','Little Regent','Belvedere British',
+    'Manor Hall International','Bedaya Center'
+]
 
 class Command(BaseCommand):
-    help = "Create superadmin, groups, then import Files & PaymentTypes linked by LOCATION"
+    help = "Ensure admin, General spec, Groups, then import Files/Services/Payments"
 
     def add_arguments(self, parser):
         parser.add_argument('path',  type=str, help="Excel file path")
-        parser.add_argument('sheet', type=str, help="Sheet name in the workbook")
+        parser.add_argument('sheet', type=str, help="Sheet name")
 
     def handle(self, *args, **options):
-        # 1) Ensure superuser 'admin'/'admin'
-        if not User.objects.filter(username='admin').exists():
-            User.objects.create_superuser('admin', 'admin@example.com', 'admin', first_name = "Rama", last_name = "Alkhobbi")
-            self.stdout.write(self.style.SUCCESS("Superuser 'admin' created."))
+        # 0) Create or get General specialization
+        general_spec, _ = Specialization.objects.get_or_create(name="General")
+        self.stdout.write(self.style.SUCCESS("Ensured specialization: General"))
 
-        # 2) Create/ensure Groups (capitalized names)
+        # 1) Create admin/admin and assign General
+        admin, created = User.objects.get_or_create(
+            username='admin',
+            defaults={'email':'admin@example.com'}
+        )
+        if created:
+            admin.set_password('admin')
+            admin.is_superuser = True
+            admin.is_staff = True
+            admin.first_name = "Rama"
+            admin.last_name = "Alkhobbi"
+            admin.save()
+            self.stdout.write(self.style.SUCCESS("Superuser 'admin' created."))
+        # ensure profile exists and add General
+        admin.employee_profile.specializations.add(general_spec)
+        self.stdout.write(self.style.SUCCESS("Assigned 'General' to admin."))
+
+        # 2) Ensure Groups
         groups = {}
         for raw in GROUP_NAMES:
             name = raw.strip().title()
-            grp, _ = Group.objects.get_or_create(name=name, defaults={'type': 0})
+            grp, _ = Group.objects.get_or_create(name=name, defaults={'type':0})
             groups[name] = grp
         self.stdout.write(self.style.SUCCESS(f"Ensured {len(groups)} groups."))
 
-        # 3) Read Excel and import
+        # 3) Read Excel
         df = pd.read_excel(options['path'], sheet_name=options['sheet'])
-        for _, row in tqdm(df.iterrows(), total=len(df), desc="Importing rows"):
+        for _, row in tqdm(df.iterrows(), total=len(df), desc="Importing"):
             file_num     = int(row['FILE'])
-            service_type = str(row['TRX']).strip()
+            trx_code     = str(row['TRX']).strip().upper()
             insurance    = str(row['COMP']).strip()
-            patient_name = str(row['NAME']).strip().title()
+            patient_name = str(row['NAME']).strip()
             loc_raw      = str(row['LOCATION']).strip().title()
 
-            # Default to Center if LOCATION not recognised
+            # assign group (default Center)
             group = groups.get(loc_raw, groups['Center'])
 
-            # Create or update File
-            file_obj, created = File.objects.get_or_create(
+            # File
+            fobj, created = File.objects.get_or_create(
                 number=file_num,
-                defaults={'patient_name': patient_name, 'group': group}
+                defaults={'patient_name':patient_name, 'group':group}
             )
-            if not created:
-                if file_obj.patient_name != patient_name or file_obj.group != group:
-                    file_obj.patient_name = patient_name
-                    file_obj.group        = group
-                    file_obj.save()
+            if not created and (fobj.patient_name!=patient_name or fobj.group!=group):
+                fobj.patient_name = patient_name
+                fobj.group = group
+                fobj.save()
 
-            # Create or get PaymentType (no dup per file/service/insurance)
+            # ServiceType
+            stobj, _ = ServiceType.objects.get_or_create(
+                code=trx_code,
+                defaults={'name':trx_code}
+            )
+
+            # ensure General is linked to every service
+            stobj.specializations.add(general_spec)
+
+            # PaymentType
             PaymentType.objects.get_or_create(
-                file=file_obj,
-                service_type=service_type,
+                file=fobj,
+                service_type=stobj,
                 insurance=insurance,
-                defaults={'num_of_session': 10}
+                defaults={'num_of_session':10}
             )
 
-        self.stdout.write(self.style.SUCCESS("Import completed successfully."))
+        self.stdout.write(self.style.SUCCESS("Import completed."))

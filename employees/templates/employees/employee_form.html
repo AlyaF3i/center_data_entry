@@ -81,60 +81,58 @@
 </form>
 
 <script>
-  // Toggle lookup methods
+  // Toggle between File vs Patient lookup
   document.querySelectorAll('input[name="lookup"]').forEach(radio =>
     radio.addEventListener('change', () => {
-      document.getElementById('method-file').style.display =
-        radio.id === 'by-file' && radio.checked ? 'block' : 'none';
-      document.getElementById('method-patient').style.display =
-        radio.id === 'by-patient' && radio.checked ? 'block' : 'none';
-      if (radio.id === 'by-patient' && radio.checked) {
-        $('#patient-list').hide();
-        $('#form-fields').hide();
+      if (radio.id === 'by-file' && radio.checked) {
+        $('#method-file').show();
+        $('#method-patient').hide();
+      } else if (radio.id === 'by-patient' && radio.checked) {
+        $('#method-file').hide();
+        $('#method-patient').show();
       }
+      // Reset
+      $('#patient-list').hide();
+      $('#form-fields').hide();
+      $('#id_group, #id_patient_search').closest('.form-group').show();
     })
   );
 
   // Shared loader for payment types
   function loadPaymentTypes(fileNum) {
     fetch(`/ajax/payment-types/?file_number=${fileNum}`)
-      .then(r => r.json())
+      .then(res => res.json())
       .then(data => {
-        const sel = document.getElementById('id_payment_type');
-        sel.innerHTML = '';
+        const sel = $('#id_payment_type').empty();
         data.payment_types.forEach(pt => {
-          const o = new Option(pt.label, pt.id);
-          sel.add(o);
+          sel.append(new Option(pt.label, pt.id));
         });
-        document.getElementById('form-fields').style.display = 'block';
+        $('#form-fields').show();
       });
   }
 
   // File-lookup flow
-  document.getElementById('btn-load-services').onclick = () => {
-    const fn = document.getElementById('id_file_number').value;
-    const err = document.getElementById('file-error');
+  $('#btn-load-services').on('click', () => {
+    const fn = $('#id_file_number').val();
+    const err = $('#file-error');
     fetch(`/ajax/payment-types/?file_number=${fn}`)
-      .then(r => r.json())
+      .then(res => res.json())
       .then(data => {
         if (!data.payment_types.length) {
-          err.style.display = 'block';
+          err.show();
         } else {
-          err.style.display = 'none';
+          err.hide();
+          $('#method-file, #method-patient').hide();
           loadPaymentTypes(fn);
         }
       });
-  };
+  });
 
-  // Enable/disable patient search when group changes, and set default location
+  // Enable & populate patient directory when group changes
   $('#id_group').on('change', function() {
     const gid = $(this).val();
-    const groupName = $('#id_group option:selected').text();
+    $('#id_location').val($('#id_group option:selected').text());
     const $ps = $('#id_patient_search');
-
-    // Set location input to selected group name (editable)
-    $('#id_location').val(groupName);
-
     if (gid) {
       $ps.prop('disabled', false).val(null).trigger('change');
       $('#patient-list').empty().show();
@@ -145,7 +143,23 @@
     }
   });
 
-  // Fetch & render patient list as cards
+  // When you click a card’s “Select” button
+  function selectPatient(fileNum) {
+    // Hide group & search inputs
+    $('#id_group, #id_patient_search').closest('.form-group').hide();
+
+    // Hide only non-selected cards
+    $('#patient-list').find('[data-file-id]').each(function() {
+      if ($(this).data('file-id') != fileNum) {
+        $(this).hide();
+      }
+    });
+
+    // Load payment types
+    loadPaymentTypes(fileNum);
+  }
+
+  // Fetch & render patient cards (with data-file-id)
   function fetchAndListPatients() {
     const gid = $('#id_group').val();
     const q   = $('.select2-search__field').val() || '';
@@ -157,12 +171,13 @@
     }).done(data => {
       const $grid = $('#patient-list').empty().show();
       if (!data.results.length) {
-        $grid.append('<div class="col-12"><div class="alert alert-warning">No patients found.</div></div>');
-        return;
+        return $grid.append(
+          '<div class="col-12"><div class="alert alert-warning">No patients found.</div></div>'
+        );
       }
       data.results.forEach(item => {
         const card = $(`
-          <div class="col-md-4 mb-3">
+          <div class="col-md-4 mb-3" data-file-id="${item.id}">
             <div class="card shadow-sm h-100">
               <div class="card-body d-flex justify-content-between align-items-center">
                 <div>
@@ -176,13 +191,13 @@
             </div>
           </div>
         `);
-        card.find('.select-btn').on('click', () => loadPaymentTypes(item.id));
+        card.find('.select-btn').on('click', () => selectPatient(item.id));
         $grid.append(card);
       });
     });
   }
 
-  // Patient-directory flow with Select2
+  // Initialize Select2 for patient search
   $('#id_patient_search').select2({
     placeholder: 'Search by ID or name',
     allowClear: true,
@@ -198,24 +213,17 @@
       processResults: data => ({ results: data.results }),
       cache: true
     }
-  })
-  .on('select2:open', function() {
-    // Load all on open
+  }).on('select2:open', () => {
     $('.select2-search__field').val('').trigger('input');
     fetchAndListPatients();
-  })
-  .on('select2:select', function(e) {
-    loadPaymentTypes(e.params.data.id);
-  })
-  .on('select2:clear', function() {
-    $('#patient-list').hide();
-    $('#form-fields').hide();
-  })
-  ;
-
-// Update grid on dropdown search input
-  $(document).on('input', '.select2-search__field', function() {
-    fetchAndListPatients();
+  }).on('select2:select', e => {
+    selectPatient(e.params.data.id);
+  }).on('select2:clear', () => {
+    $('#patient-list, #form-fields').hide();
+    $('#id_group, #id_patient_search').closest('.form-group').show();
   });
+
+  // Live-filter cards as you type
+  $(document).on('input', '.select2-search__field', fetchAndListPatients);
 </script>
 {% endblock %}
