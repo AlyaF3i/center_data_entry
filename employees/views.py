@@ -46,9 +46,10 @@ def edit_record(request, pk):
 
 @login_required
 def list_records(request):
-    if not request.user.is_super:
+    if not request.user.is_superuser:
         qs = EmployeeRecord.objects.filter(created_by=request.user)
-
+    else:
+        qs = EmployeeRecord.objects.all()
     # Existing filters
     file_filter      = request.GET.get('file')
     place_filter     = request.GET.get('place')
@@ -57,7 +58,7 @@ def list_records(request):
     if file_filter:
         qs = qs.filter(payment_type__file__number=file_filter)
     if place_filter:
-        qs = qs.filter(service_place__icontains=place_filter)
+        qs = qs.filter(location__icontains=place_filter)
     if insurance_filter:
         qs = qs.filter(payment_type__insurance=insurance_filter)
 

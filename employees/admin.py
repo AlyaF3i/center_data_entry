@@ -107,19 +107,25 @@ class EmployeeProfileInline(admin.StackedInline):
     model = EmployeeProfile
     can_delete = False
     filter_horizontal = ('specializations',)
-    verbose_name = "Employee Profile"
-
 
 class UserAdmin(BaseUserAdmin):
-    inlines       = (EmployeeProfileInline,)
-    list_display  = BaseUserAdmin.list_display + ('get_specializations',)
+    inlines = (EmployeeProfileInline,)
 
+    def get_inline_instances(self, request, obj=None):
+        """
+        Only show the profile inline when editing an existing user,
+        not when creating a new one — avoids the duplicate-profile error.
+        """
+        if obj is None:  # adding a new user
+            return []
+        return super().get_inline_instances(request, obj)
+
+    # keep your existing list_display etc.
+    list_display = BaseUserAdmin.list_display + ('get_specializations',)
     def get_specializations(self, obj):
-        return ", ".join(
-            s.name for s in obj.employee_profile.specializations.all()
-        )
+        return ", ".join(s.name for s in obj.employee_profile.specializations.all())
     get_specializations.short_description = "Specializations"
 
-
+# Unregister old User admin, register new one
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)

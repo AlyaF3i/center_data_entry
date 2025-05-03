@@ -23,7 +23,7 @@ class ServiceType(models.Model):
     )
 
     def __str__(self):
-        return f"{self.code} – {self.name}"
+        return f"{self.code}"
 
 class ServiceTypeSpecialization(models.Model):
     service_type   = models.ForeignKey(

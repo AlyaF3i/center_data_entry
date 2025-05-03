@@ -61,6 +61,8 @@ class Command(BaseCommand):
         # 3) Read Excel
         df = pd.read_excel(options['path'], sheet_name=options['sheet'])
         for _, row in tqdm(df.iterrows(), total=len(df), desc="Importing"):
+            if  "stop" in str(row['REMARKS']).strip().lower():
+                continue
             file_num     = int(row['FILE'])
             trx_code     = str(row['TRX']).strip().upper()
             insurance    = str(row['COMP']).strip()
