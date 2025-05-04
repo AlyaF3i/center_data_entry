@@ -42,7 +42,7 @@ def edit_record(request, pk):
             return redirect('record_list')
     else:
         form = EmployeeForm(instance=record)
-    return render(request, 'employees/employee_form.html', {'form': form})
+    return render(request, 'employees/employee_edit_form.html', {'form': form})
 
 @login_required
 def list_records(request):
