@@ -93,7 +93,7 @@
         {% for r in records %}
         <tr>
           <td>{{ r.payment_type.file.number }}</td>
-          <td>{{ r.date|date:"Y-m-d H:i" }}</td>
+          <td>{{ r.date|date:"d M y" }}</td> {% comment %} "y-m-d H:i" {% endcomment %}
           <td>{{ r.duration_minutes }}</td>
           <td>{{ r.is_session|yesno:"Yes,No" }}</td>
           <td>{{ r.payment_type.file.patient_name|title }}</td>

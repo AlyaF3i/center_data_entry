@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.db.models import Sum
-from django.utils import timezone
+from datetime import datetime
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 
@@ -124,7 +124,7 @@ class PaymentType(models.Model):
         if self.insurance == self.CASH:
             rem = self.sessions_remaining()
             tot = self.total_sessions()
-            days_passed = (timezone.now() - self.updated_at).days
+            days_passed = (datetime.now() - self.updated_at).days
             status = "Expired" if days_passed > self.CASH_LIMIT else f"{self.CASH_LIMIT - days_passed}d"
             return f"{base} ({rem}/{tot}) ({status})"
         return f"{base} (Unlimited)"

@@ -133,3 +133,6 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 LOGIN_URL = '/login/'
 AUTH_PASSWORD_VALIDATORS = []
+# Use UAE local time everywhere (no UTC storage)
+TIME_ZONE = 'Asia/Dubai'
+USE_TZ = False

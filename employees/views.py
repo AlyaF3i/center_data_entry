@@ -1,8 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden, JsonResponse
-from django.utils import timezone
-from datetime import timedelta
 from .forms import EmployeeForm
 from django.contrib.auth import logout
 from django.views.decorators.http import require_GET
@@ -33,7 +31,7 @@ def create_record(request):
 def edit_record(request, pk):
     record = get_object_or_404(EmployeeRecord, pk=pk, created_by=request.user)
     # Only allow edits within 1 hour
-    if timezone.now() - record.date > timedelta(hours=1):
+    if datetime.now() - record.date > timedelta(hours=1):
         return HttpResponseForbidden("Editing time window has expired.")
     if request.method == 'POST':
         form = EmployeeForm(request.POST, instance=record)
@@ -79,7 +77,7 @@ def list_records(request):
             pass
 
     # Determine editable records (within 1 hour)
-    cutoff = timezone.now() - timedelta(hours=1)
+    cutoff = datetime.now() - timedelta(hours=1)
     editable_pks = list(qs.filter(date__gte=cutoff).values_list('pk', flat=True))
 
     records = qs.order_by('-date')
