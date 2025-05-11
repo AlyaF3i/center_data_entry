@@ -64,7 +64,7 @@ class Command(BaseCommand):
                 continue
             file_num     = int(row['FILE'])
             trx_code     = str(row['TRX']).strip().upper()
-            insurance    = str(row['COMP']).strip()
+            insurance    = str(row['COMP']).strip().capitalize()
             patient_name = str(row['NAME']).strip()
             loc_raw      = str(row['LOCATION']).strip().title()
 
