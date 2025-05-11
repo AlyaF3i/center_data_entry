@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 # from employee_site.settings import ALLOWED_HOSTS
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,10 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-7)k0p(a1iz&50+x2$%9l_zn223gw1!vp@jk0-ad_m8pcctz-gb'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = []
-DOMAIN = "7393-2001-8f8-1c3b-1260-1caf-2afb-931c-818c.ngrok-free.app"
+DOMAIN = os.getenv('DOMAIN_ENV')
 ALLOWED_HOSTS = [DOMAIN, "localhost", "127.0.0.1"]
 # CSRF_TRUSTED_ORIGINS = [f"http://{a}/" for a in ALLOWED_HOSTS] + [f"https://{a}/" for a in ALLOWED_HOSTS]
 CSRF_TRUSTED_ORIGINS = [f"https://{DOMAIN}"]
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+      'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -120,8 +122,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
 
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
@@ -136,3 +140,6 @@ AUTH_PASSWORD_VALIDATORS = []
 # Use UAE local time everywhere (no UTC storage)
 TIME_ZONE = 'Asia/Dubai'
 USE_TZ = False
+SILENCED_SYSTEM_CHECKS = [
+    "security.W004"
+]

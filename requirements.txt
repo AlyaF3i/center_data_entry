@@ -1,2 +1,6 @@
 Django
-tqdm
+pandas
+openpyxl
+gunicorn
+psycopg2-binary
+whitenose

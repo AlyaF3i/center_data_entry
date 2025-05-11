@@ -11,7 +11,11 @@ from .models import (
     Specialization,
     EmployeeProfile,
 )
-
+import os
+from django.urls import path
+from django.conf import settings
+from django.http import FileResponse, HttpResponseForbidden
+from django.contrib.auth.decorators import login_required
 User = get_user_model()
 
 
@@ -129,3 +133,35 @@ class UserAdmin(BaseUserAdmin):
 # Unregister old User admin, register new one
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
+
+
+# Keep a reference to the original get_urls
+_old_get_urls = admin.site.get_urls
+
+@login_required(login_url='/admin/login/')
+def download_sqlite(request):
+    """
+    Streams the SQLite DB file—but only for logged-in users.
+    """
+    # If you also want to restrict to superusers, uncomment:
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Does Not Exists")
+    db_path = os.path.join(settings.BASE_DIR, 'db.sqlite3')
+    return FileResponse(
+        open(db_path, 'rb'),
+        as_attachment=True,
+        filename='db.sqlite3'
+    )
+
+def get_urls():
+    custom_urls = [
+        path(
+            'download-db/',
+            download_sqlite,
+            name='download-db'
+        ),
+    ]
+    return custom_urls + _old_get_urls()
+
+# Monkey-patch the admin site
+admin.site.get_urls = get_urls

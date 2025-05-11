@@ -1,7 +1,6 @@
 # employees/management/commands/import_sheet.py
 
 import pandas as pd
-from tqdm import tqdm
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 
@@ -60,7 +59,7 @@ class Command(BaseCommand):
 
         # 3) Read Excel
         df = pd.read_excel(options['path'], sheet_name=options['sheet'])
-        for _, row in tqdm(df.iterrows(), total=len(df), desc="Importing"):
+        for _, row in df.iterrows():
             if  "stop" in str(row['REMARKS']).strip().lower():
                 continue
             file_num     = int(row['FILE'])
