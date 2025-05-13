@@ -4,6 +4,7 @@ import pandas as pd
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 
+
 from employees.models import (
     Group,
     File,
@@ -16,7 +17,7 @@ User = get_user_model()
 
 GROUP_NAMES = [
     'Center','Almadar',"Teddy'S Inn",'Aldana','Alsomow',
-    'Alshiam','Little Regent','Belvedere British',
+    'Al Shiyam','Little Regent','Belvedere British',
     'Manor Hall International','Bedaya Center'
 ]
 

@@ -1,0 +1,124 @@
+{
+  "speech_therapists": [
+    {
+      "username": "wejdan",
+      "password": "wejdan123",
+      "fullName": "Wejdan Alsharif",
+      "role": "Speech Therapist"
+    },
+    {
+      "username": "toqa",
+      "password": "toqa123",
+      "fullName": "Toqa Abuhaweeleh",
+      "role": "Speech Therapist"
+    },
+    {
+      "username": "shihdeh",
+      "password": "shihdeh123",
+      "fullName": "Shihdeh Alkhawaldeh",
+      "role": "Speech Therapist"
+    },
+    {
+      "username": "rawan",
+      "password": "rawan123",
+      "fullName": "Rawan alrabayah",
+      "role": "Speech Therapist"
+    },
+    {
+      "username": "mohammad.h",
+      "password": "mohammad.h123",
+      "fullName": "Mohammad Haimour",
+      "role": "Speech Therapist"
+    },
+    {
+      "username": "rama",
+      "password": "rama123",
+      "fullName": "Rama Nasralla",
+      "role": "Speech Therapist"
+    },
+    {
+      "username": "mohammad.b",
+      "password": "mohammad.b123",
+      "fullName": "Mohammad Bani Ata",
+      "role": "Speech Therapist"
+    }
+  ],
+  "occupational_therapists": [
+    {
+      "username": "aisha",
+      "password": "aisha123",
+      "fullName": "Aisha Alobaidy",
+      "role": "Occupational Therapist"
+    },
+    {
+      "username": "mohammad.herz",
+      "password": "mohammad.herz123",
+      "fullName": "Mohammad Herz Allah",
+      "role": "Occupational Therapist"
+    },
+    {
+      "username": "saeda",
+      "password": "saeda123",
+      "fullName": "Saeda Baninaser",
+      "role": "Occupational Therapist"
+    },
+    {
+      "username": "ahmad",
+      "password": "ahmad123",
+      "fullName": "Ahmad Almasarweh",
+      "role": "Occupational Therapist"
+    },
+    {
+      "username": "khaled",
+      "password": "khaled123",
+      "fullName": "Khaled AbuShaqra",
+      "role": "Occupational Therapist"
+    },
+    {
+      "username": "issa",
+      "password": "issa123",
+      "fullName": "Issa Alshara",
+      "role": "Occupational Therapist"
+    },
+    {
+      "username": "yousra",
+      "password": "yousra123",
+      "fullName": "Yousra Akkash",
+      "role": "Occupational Therapist"
+    }
+  ],
+  "physiotherapists": [
+    {
+      "username": "razan",
+      "password": "razan123",
+      "fullName": "RAZAN ALABAZA",
+      "role": "Physiotherapist"
+    },
+    {
+      "username": "mohammed.q",
+      "password": "mohammed.q123",
+      "fullName": "Mohammed Qassem",
+      "role": "Physiotherapist"
+    },
+    {
+      "username": "hayel",
+      "password": "hayel123",
+      "fullName": "Hayel Albarbour",
+      "role": "Physiotherapist"
+    }
+  ],
+  "behavioral_therapists": [
+    {
+      "username": "abedulrahman",
+      "password": "abedulrahman123",
+      "fullName": "Abedulrahman Awamreh",
+      "role": "Behavioral Therapist"
+    },
+    {
+      "username": "malek",
+      "password": "malek123",
+      "fullName": "Malek Alqasrawee",
+      "role": "Behavioral Therapist"
+    }
+  ]
+}
