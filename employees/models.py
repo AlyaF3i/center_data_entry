@@ -117,7 +117,7 @@ class File(models.Model):
 
 
     def __str__(self) -> str:
-        center_name = self.center.name if self.center_id else "No Center"
+        center_name = self.group.cente.name if self.group.center else "No Center"
         return (
             f"File {self.number} – {self.patient_name} "
             f"(Center: {center_name}; Group: {self.group.name})"
