@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
+    Center,
     Group,
     File,
     ServiceType,
@@ -20,26 +21,31 @@ from django.contrib.auth.decorators import login_required
 User = get_user_model()
 
 
-# Inline for the ServiceType↔Specialization through-model
 class ServiceTypeSpecializationInline(admin.TabularInline):
     model = ServiceTypeSpecialization
     extra = 1
-    # when in ServiceTypeAdmin, Django will infer fk_name='service_type'
-    # when in SpecializationAdmin, we’ll override fk_name below
+
+
+@admin.register(Center)
+class CenterAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+    ordering = ('name',)
 
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
-    list_display  = ('name', 'type')
-    list_filter   = ('type',)
-    search_fields = ('name',)
+    list_display  = ('name', 'center', 'type')
+    list_filter   = ('center', 'type')
+    search_fields = ('name', 'center__name')
 
 
 @admin.register(File)
 class FileAdmin(admin.ModelAdmin):
-    list_display  = ('number', 'patient_name', 'group', 'created_at')
-    list_filter   = ('group',)
-    search_fields = ('number', 'patient_name',)
+    list_display  = ('number', 'patient_name', 'center', 'group', 'created_at')
+    list_filter   = ('center', 'group')
+    search_fields = ('number', 'patient_name', 'center__name',)
 
 
 @admin.register(ServiceType)
@@ -80,7 +86,7 @@ class PaymentTypeAdmin(admin.ModelAdmin):
         'file', 'service_type', 'insurance',
         'num_of_session', 'sessions_used', 'sessions_remaining'
     )
-    list_filter     = ('file__group', 'service_type__code', 'insurance')
+    list_filter     = ('file__group__center', 'file__group', 'service_type__code', 'insurance')
     search_fields   = ('file__number',)
     ordering        = ('-created_at',)
 
@@ -92,7 +98,7 @@ class PaymentTypeCanceledAdmin(admin.ModelAdmin):
     search_fields = ('file__number', 'service_type__code', 'service_type__name', 'cancel_reason')
     list_per_page = 50
 
-    # ↓ Filter to only canceled rows. Adjust the predicate to your model.
+    # â†“ Filter to only canceled rows. Adjust the predicate to your model.
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         # If you have a status field:
@@ -153,7 +159,7 @@ class UserAdmin(BaseUserAdmin):
     def get_inline_instances(self, request, obj=None):
         """
         Only show the profile inline when editing an existing user,
-        not when creating a new one — avoids the duplicate-profile error.
+        not when creating a new one â€” avoids the duplicate-profile error.
         """
         if obj is None:  # adding a new user
             return []
@@ -176,7 +182,7 @@ _old_get_urls = admin.site.get_urls
 @login_required(login_url='/admin/login/')
 def download_sqlite(request):
     """
-    Streams the SQLite DB file—but only for logged-in users.
+    Streams the SQLite DB fileâ€”but only for logged-in users.
     """
     # If you also want to restrict to superusers, uncomment:
     if not request.user.is_superuser:

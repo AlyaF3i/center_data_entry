@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}My Records{% endblock %}
 {% block content %}
+{% if active_center %}
+  <div class="alert alert-info d-flex align-items-center justify-content-between">
+    <span>Showing records for <strong>{{ active_center.name }}</strong></span>
+    <a class="btn btn-sm btn-outline-primary" href="{% url 'select_center' %}?next={{ request.get_full_path|urlencode }}">Switch Center</a>
+  </div>
+{% endif %}
 <form method="get" class="mb-4">
   <div class="card p-3">
     <div class="form-row align-items-end">

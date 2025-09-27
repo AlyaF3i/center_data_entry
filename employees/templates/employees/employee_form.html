@@ -3,6 +3,9 @@
 
 {% block content %}
 <h2 class="mb-4">New Record</h2>
+{% if active_center %}
+<div class="alert alert-secondary">Working in center <strong>{{ active_center.name }}</strong></div>
+{% endif %}
 <form method="post" id="record-form" novalidate>
   {% csrf_token %}
 
@@ -61,10 +64,6 @@
     </div>
     <div class="form-check mb-3">
       {{ form.is_session }} {{ form.is_session.label_tag }}
-    </div>
-    <div class="form-group">
-      {{ form.patient_name.label_tag }}
-      {{ form.patient_name }}
     </div>
     <div class="form-group">
       {{ form.duration_minutes.label_tag }}

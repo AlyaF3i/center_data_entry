@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Select Center{% endblock %}
+{% block content %}
+<h2 class="mb-4">Select Your Center</h2>
+<p class="text-muted">Pick a center to load its files, patients, and records. Your choice stays in this session until you switch.</p>
+{% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+<form method="post" class="card p-4 shadow-sm">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="form-group">
+    <label for="id_center">Available centers</label>
+    <select name="center_id" id="id_center" class="form-control" required>
+      <option value="">-- Select --</option>
+      {% for center in centers %}
+        <option value="{{ center.id }}" {% if center.id|stringformat:'s' == current_center_id|stringformat:'s' %}selected{% endif %}>{{ center.name }}</option>
+      {% empty %}
+        <option value="" disabled>No centers available.</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="d-flex align-items-center">
+    <button type="submit" class="btn btn-primary">Continue</button>
+    {% if current_center_id %}
+      <a class="btn btn-link ml-3" href="{{ next }}">Keep current center</a>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}
