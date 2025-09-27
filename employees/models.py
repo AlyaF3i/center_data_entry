@@ -74,6 +74,8 @@ class File(models.Model):
         on_delete=models.CASCADE,
         related_name='files'
     )
+    created_at     = models.DateTimeField(auto_now_add=True)
+    updated_at     = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"File {self.number} – {self.patient_name} (Group: {self.group.name})"
 
@@ -95,6 +97,9 @@ class PaymentType(models.Model):
         choices=[('Thiqa','Thiqa'),('Enhanced','Enhanced'),(CASH,CASH),('Free','Free')]
     )
     num_of_session = models.PositiveIntegerField("Total Sessions", default=10)
+
+    cancel_reason  = models.TextField("Cancel Reason", blank=True)
+    is_canceled    = models.BooleanField("Is Canceled", default=False)
     created_at     = models.DateTimeField(auto_now_add=True)
     updated_at     = models.DateTimeField(auto_now=True)
 
@@ -128,6 +133,12 @@ class PaymentType(models.Model):
             status = "Expired" if days_passed > self.CASH_LIMIT else f"{self.CASH_LIMIT - days_passed}d"
             return f"{base} ({rem}/{tot}) ({status})"
         return f"{base} (Unlimited)"
+
+class PaymentTypeCanceled(PaymentType):
+    class Meta:
+        proxy = True
+        verbose_name = "Canceled Payment Type"
+        verbose_name_plural = "Canceled Payment Types"
 
 class EmployeeRecord(models.Model):
     payment_type     = models.ForeignKey(

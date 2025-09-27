@@ -84,6 +84,7 @@ This will:
 Start the Django development server on port 8000:
 
 ```powershell
+python manage.py collectstatic
 python manage.py runserver
 ```
 

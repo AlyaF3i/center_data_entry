@@ -10,6 +10,7 @@ from .models import (
     EmployeeRecord,
     Specialization,
     EmployeeProfile,
+    PaymentTypeCanceled,
 )
 import os
 from django.urls import path
@@ -36,7 +37,7 @@ class GroupAdmin(admin.ModelAdmin):
 
 @admin.register(File)
 class FileAdmin(admin.ModelAdmin):
-    list_display  = ('number', 'patient_name', 'group')
+    list_display  = ('number', 'patient_name', 'group', 'created_at')
     list_filter   = ('group',)
     search_fields = ('number', 'patient_name',)
 
@@ -83,6 +84,40 @@ class PaymentTypeAdmin(admin.ModelAdmin):
     search_fields   = ('file__number',)
     ordering        = ('-created_at',)
 
+@admin.register(PaymentTypeCanceled)
+class PaymentTypeCanceledAdmin(admin.ModelAdmin):
+    """View-only list for canceled PaymentType rows."""
+    list_display = ('updated_at', 'file_number', 'payment_type', 'cancel_reason')
+    ordering = ('-updated_at',)
+    search_fields = ('file__number', 'service_type__code', 'service_type__name', 'cancel_reason')
+    list_per_page = 50
+
+    # ↓ Filter to only canceled rows. Adjust the predicate to your model.
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # If you have a status field:
+        if 'status' in [f.name for f in qs.model._meta.get_fields()]:
+            return qs.filter(status='canceled')
+        # Or if you have a boolean flag:
+        if 'is_canceled' in [f.name for f in qs.model._meta.get_fields()]:
+            return qs.filter(is_canceled=True)
+        # Fallback: no extra filtering (remove if not needed)
+        return qs.none()
+
+    # ---- Columns ----
+    def file_number(self, obj):
+        return getattr(obj.file, 'number', '')
+    file_number.short_description = "File Number"
+    file_number.admin_order_field = 'file__number'
+
+    def payment_type(self, obj):
+        # Pick what represents "payment type" in your model
+        # Try code then name on related service_type; adapt if you have a different field.
+        if hasattr(obj, 'service_type') and obj.service_type:
+            return getattr(obj.service_type, 'code', None) or getattr(obj.service_type, 'name', '')
+        return ''
+    payment_type.short_description = "Payment Type"
+    payment_type.admin_order_field = 'service_type__code'
 
 @admin.register(EmployeeRecord)
 class EmployeeRecordAdmin(admin.ModelAdmin):

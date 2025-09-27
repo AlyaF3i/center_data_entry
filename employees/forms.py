@@ -3,7 +3,7 @@ from .models import PaymentType, EmployeeRecord
 
 class EmployeeForm(forms.ModelForm):
     payment_type = forms.ModelChoiceField(
-        queryset=PaymentType.objects.select_related('file'),
+        queryset=PaymentType.objects.filter(is_canceled=False).select_related('file'),
         widget=forms.Select(attrs={'class': 'form-control select2'}),
         label="Payment (File • Ins./Service • Remaining)"
     )

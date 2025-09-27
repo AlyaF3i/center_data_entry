@@ -105,7 +105,7 @@ def get_payment_types(request):
     except File.DoesNotExist:
         return JsonResponse({'payment_types': []})
 
-    pts = PaymentType.objects.filter(file=f)
+    pts = PaymentType.objects.filter(file=f, is_canceled=False)
     # gather user specs
     specs = request.user.employee_profile.specializations.values_list('name', flat=True)
 
