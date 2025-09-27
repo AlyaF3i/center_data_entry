@@ -43,9 +43,9 @@ class GroupAdmin(admin.ModelAdmin):
 
 @admin.register(File)
 class FileAdmin(admin.ModelAdmin):
-    list_display  = ('number', 'patient_name', 'group__center', 'group', 'created_at')
+    list_display  = ('number', 'patient_name', 'group', 'created_at')
     list_filter   = ('center', 'group')
-    search_fields = ('number', 'patient_name', 'center__name',)
+    search_fields = ('number', 'patient_name', 'group__center__name',)
 
 
 @admin.register(ServiceType)

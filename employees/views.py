@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.core.paginator import Paginator
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -168,11 +169,41 @@ def list_records(request):
     editable_pks = list(qs.filter(date__gte=cutoff).values_list('pk', flat=True))
 
     records = qs.order_by('-date')
+    paginator = Paginator(records, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    total_pages = paginator.num_pages or 1
+    current_page = page_obj.number
+    window = 2
+    start_page = max(current_page - window, 1)
+    end_page = min(current_page + window, total_pages)
+    page_numbers = []
+    if start_page > 1:
+        page_numbers.append(1)
+        if start_page > 2:
+            page_numbers.append(None)
+    page_numbers.extend(range(start_page, end_page + 1))
+    if end_page < total_pages:
+        if end_page < total_pages - 1:
+            page_numbers.append(None)
+        page_numbers.append(total_pages)
+
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        query_params.pop('page')
+    query_string = query_params.urlencode()
+
     return render(
         request,
         'employees/employee_list.html',
         {
-            'records': records,
+            'records': page_obj.object_list,
+            'page_obj': page_obj,
+            'paginator': paginator,
+            'total_pages': total_pages,
+            'page_numbers': page_numbers,
+            'query_string': query_string,
             'file': file_filter or '',
             'place': place_filter or '',
             'insurance': insurance_filter or '',

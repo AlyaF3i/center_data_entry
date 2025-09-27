@@ -78,6 +78,16 @@
     </div>
   </div>
 </form>
+{% if paginator %}
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    {% if paginator.count %}
+      <small class="text-muted">Displaying {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ paginator.count }} records</small>
+    {% else %}
+      <small class="text-muted">No records found</small>
+    {% endif %}
+    <small class="text-muted">Page {{ page_obj.number }} of {{ total_pages }}</small>
+  </div>
+{% endif %}
   <div class="table-responsive shadow-sm">
     <table class="table table-hover">
       <thead class="thead-light">
@@ -96,7 +106,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for r in records %}
+        {% for r in page_obj %}
         <tr>
           <td>{{ r.payment_type.file.number }}</td>
           <td>{{ r.date|date:"d M y" }}</td> {% comment %} "y-m-d H:i" {% endcomment %}
@@ -123,4 +133,35 @@
       </tbody>
     </table>
   </div>
+{% if paginator and total_pages > 1 %}
+  <nav aria-label="Records pagination" class="mt-3">
+    <ul class="pagination justify-content-center">
+      {% with base=query_string %}
+      <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+        {% if page_obj.has_previous %}
+        <a class="page-link" href="?{% if base %}{{ base }}&{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Previous">Previous</a>
+        {% else %}
+        <span class="page-link">Previous</span>
+        {% endif %}
+      </li>
+      {% for num in page_numbers %}
+        {% if not num %}
+          <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+        {% elif num == page_obj.number %}
+          <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+        {% else %}
+          <li class="page-item"><a class="page-link" href="?{% if base %}{{ base }}&{% endif %}page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+        {% if page_obj.has_next %}
+        <a class="page-link" href="?{% if base %}{{ base }}&{% endif %}page={{ page_obj.next_page_number }}" aria-label="Next">Next</a>
+        {% else %}
+        <span class="page-link">Next</span>
+        {% endif %}
+      </li>
+      {% endwith %}
+    </ul>
+  </nav>
+{% endif %}
 {% endblock %}
