@@ -199,15 +199,15 @@ def get_payment_types(request):
 
     file_number = request.GET.get('file_number')
     try:
-        f = File.objects.get(number=file_number, center=center)
+        f = File.objects.get(number=file_number, group__center=center)
     except (File.DoesNotExist, ValueError, TypeError):
         return JsonResponse({'payment_types': []})
 
     pts = PaymentType.objects.filter(file=f, is_canceled=False)
     if hasattr(request.user, 'employee_profile'):
-        spec_ids = list(request.user.employee_profile.specializations.values_list('id', flat=True))
-        if spec_ids:
-            pts = pts.filter(service_type__specializations__in=spec_ids)
+        spec_names = list(request.user.employee_profile.specializations.values_list('id', flat=True))
+        if spec_names:
+            pts = pts.filter(service_type__specializations__name__in=spec_names)
     pts = pts.order_by('service_type__code', 'insurance', '-created_at').distinct()
 
     seen = set()

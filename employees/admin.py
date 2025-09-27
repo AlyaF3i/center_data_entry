@@ -43,7 +43,7 @@ class GroupAdmin(admin.ModelAdmin):
 
 @admin.register(File)
 class FileAdmin(admin.ModelAdmin):
-    list_display  = ('number', 'patient_name', 'center', 'group', 'created_at')
+    list_display  = ('number', 'patient_name', 'group__center', 'group', 'created_at')
     list_filter   = ('center', 'group')
     search_fields = ('number', 'patient_name', 'center__name',)
 
@@ -80,15 +80,26 @@ class ServiceTypeSpecializationAdmin(admin.ModelAdmin):
     list_filter  = ('service_type', 'specialization')
 
 
+# @admin.register(PaymentType)
+# class PaymentTypeAdmin(admin.ModelAdmin):
+#     list_display    = (
+#         'file', 'service_type', 'insurance',
+#         'num_of_session', 'sessions_used', 'sessions_remaining'
+#     )
+#     list_filter     = ('file__group__center', 'file__group', 'service_type__code', 'insurance')
+#     search_fields   = ('file__number',)
+#     ordering        = ('-created_at',)
+
 @admin.register(PaymentType)
 class PaymentTypeAdmin(admin.ModelAdmin):
-    list_display    = (
+    autocomplete_fields = ('file',)  # <— type a file number to search
+    list_display = (
         'file', 'service_type', 'insurance',
         'num_of_session', 'sessions_used', 'sessions_remaining'
     )
-    list_filter     = ('file__group__center', 'file__group', 'service_type__code', 'insurance')
-    search_fields   = ('file__number',)
-    ordering        = ('-created_at',)
+    list_filter = ('file__group__center', 'file__group', 'service_type__code', 'insurance')
+    search_fields = ('file__number',)
+    ordering = ('-created_at',)
 
 @admin.register(PaymentTypeCanceled)
 class PaymentTypeCanceledAdmin(admin.ModelAdmin):
