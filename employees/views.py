@@ -236,7 +236,7 @@ def get_payment_types(request):
 
     pts = PaymentType.objects.filter(file=f, is_canceled=False)
     if hasattr(request.user, 'employee_profile'):
-        spec_names = list(request.user.employee_profile.specializations.values_list('id', flat=True))
+        spec_names = list(request.user.employee_profile.specializations.values_list('name', flat=True))
         if spec_names:
             pts = pts.filter(service_type__specializations__name__in=spec_names)
     pts = pts.order_by('service_type__code', 'insurance', '-created_at').distinct()
