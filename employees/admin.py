@@ -56,13 +56,14 @@ class MultiSelectListFilter(admin.SimpleListFilter):
         return queryset.filter(**{f'{self.field_path}__in': values})
 
     def remove_parameters(self):
-        return [
-            self.parameter_name,
-            self.field_path,
-            f'{self.field_path}__exact',
-            f'{self.field_path}__id__exact',
-            *self.extra_remove_parameters,
-        ]
+        parameters = [self.parameter_name, *self.extra_remove_parameters]
+        if self.field_path:
+            parameters.extend([
+                self.field_path,
+                f'{self.field_path}__exact',
+                f'{self.field_path}__id__exact',
+            ])
+        return parameters
 
     def choices(self, changelist):
         selected = set(self.token_list())
