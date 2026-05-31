@@ -18,6 +18,8 @@ from django.urls import path
 from django.conf import settings
 from django.http import FileResponse, HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
+from rangefilter.filters import DateRangeFilter
+
 User = get_user_model()
 
 
@@ -138,11 +140,13 @@ class PaymentTypeCanceledAdmin(admin.ModelAdmin):
 
 @admin.register(EmployeeRecord)
 class EmployeeRecordAdmin(admin.ModelAdmin):
-    list_display    = (
+    list_display = (
         'payment_type', 'location', 'is_session',
         'duration_minutes', 'date', 'created_by'
     )
-    list_filter     = (
+
+    list_filter = (
+        ('date', DateRangeFilter),
         'payment_type__service_type__code',
         'payment_type__insurance',
         'payment_type__file',
@@ -150,13 +154,14 @@ class EmployeeRecordAdmin(admin.ModelAdmin):
         'is_session',
         'created_by',
     )
-    search_fields   = (
+
+    search_fields = (
         'payment_type__file__number',
         'location',
         'created_by__username',
     )
-    date_hierarchy  = 'date'
-    ordering        = ('-date',)
+
+    ordering = ('-date',)
 
 
 class EmployeeProfileInline(admin.StackedInline):
