@@ -108,12 +108,11 @@ class PaymentTypeMultiSelectFilter(MultiSelectListFilter):
         query = Q()
         for value in values:
             try:
-                file_id, insurance, service_type_id = value.split(':', 2)
+                insurance, service_type_id = value.split(':', 1)
             except ValueError:
                 continue
             query |= Q(
-                payment_type__file_id=file_id,
-                payment_type__insurance=insurance,
+                payment_type__insurance__iexact=insurance,
                 payment_type__service_type_id=service_type_id,
             )
 
@@ -122,29 +121,38 @@ class PaymentTypeMultiSelectFilter(MultiSelectListFilter):
         return queryset.filter(query)
 
     def lookups(self, request, model_admin):
-        payment_types = (
+        payment_types = sorted(
             PaymentType.objects
             .filter(employee_records__isnull=False)
             .values(
-                'file_id',
-                'file__number',
                 'insurance',
                 'service_type_id',
                 'service_type__code',
             )
-            .distinct()
-            .order_by('file__number', 'insurance', 'service_type__code')
+            .distinct(),
+            key=lambda payment_type: (
+                payment_type['insurance'].casefold(),
+                payment_type['service_type__code'].casefold(),
+            )
         )
+
+        choices = {}
+        for payment_type in payment_types:
+            insurance = payment_type['insurance']
+            service_type_id = payment_type['service_type_id']
+            service_code = payment_type['service_type__code']
+            normalized_insurance = insurance.casefold()
+            choices.setdefault(
+                (normalized_insurance, service_type_id),
+                (
+                    f'{normalized_insurance}:{service_type_id}',
+                    f'{insurance.title()}/{service_code}',
+                )
+            )
+
         return [
-            ((
-                f"{payment_type['file_id']}:"
-                f"{payment_type['insurance']}:"
-                f"{payment_type['service_type_id']}"
-            ), (
-                f"{payment_type['file__number']} - "
-                f"{payment_type['insurance']}/{payment_type['service_type__code']}"
-            ))
-            for payment_type in payment_types
+            value
+            for value in choices.values()
         ]
 
 
