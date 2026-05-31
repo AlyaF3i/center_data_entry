@@ -13,6 +13,7 @@ from .models import (
     EmployeeProfile,
     PaymentTypeCanceled,
 )
+import base64
 import os
 from django.urls import path
 from django.conf import settings
@@ -21,6 +22,125 @@ from django.contrib.auth.decorators import login_required
 from rangefilter.filters import DateRangeFilter
 
 User = get_user_model()
+
+
+class MultiSelectListFilter(admin.SimpleListFilter):
+    """Admin sidebar filter that allows several values in one query parameter."""
+
+    field_path = None
+
+    def encode_value(self, value):
+        raw_value = str(value).encode('utf-8')
+        return base64.urlsafe_b64encode(raw_value).decode('ascii').rstrip('=')
+
+    def decode_value(self, value):
+        padding = '=' * (-len(value) % 4)
+        return base64.urlsafe_b64decode(f'{value}{padding}').decode('utf-8')
+
+    def token_list(self):
+        value = self.value()
+        if not value:
+            return []
+        return [item for item in value.split(',') if item]
+
+    def value_list(self):
+        return [self.decode_value(token) for token in self.token_list()]
+
+    def queryset(self, request, queryset):
+        values = self.value_list()
+        if not values:
+            return queryset
+        return queryset.filter(**{f'{self.field_path}__in': values})
+
+    def choices(self, changelist):
+        selected = set(self.token_list())
+        yield {
+            'selected': not selected,
+            'query_string': changelist.get_query_string(remove=[self.parameter_name]),
+            'display': 'All',
+        }
+
+        for lookup, title in self.lookup_choices:
+            lookup = self.encode_value(lookup)
+            next_selected = set(selected)
+            if lookup in next_selected:
+                next_selected.remove(lookup)
+            else:
+                next_selected.add(lookup)
+
+            if next_selected:
+                query_string = changelist.get_query_string({
+                    self.parameter_name: ','.join(sorted(next_selected)),
+                })
+            else:
+                query_string = changelist.get_query_string(remove=[self.parameter_name])
+
+            yield {
+                'selected': lookup in selected,
+                'query_string': query_string,
+                'display': title,
+            }
+
+
+class PaymentTypeMultiSelectFilter(MultiSelectListFilter):
+    title = 'payment type'
+    parameter_name = 'payment_type_multi'
+    field_path = 'payment_type'
+
+    def lookups(self, request, model_admin):
+        payment_types = (
+            PaymentType.objects
+            .filter(employee_records__isnull=False)
+            .select_related('file', 'service_type', 'file__group__center', 'file__group')
+            .distinct()
+            .order_by('file__number', 'insurance', 'service_type__code')
+        )
+        return [
+            (payment_type.pk, (
+                f'{payment_type.file.number} - '
+                f'{payment_type.insurance}/{payment_type.service_type.code}'
+            ))
+            for payment_type in payment_types
+        ]
+
+
+class InsuranceMultiSelectFilter(MultiSelectListFilter):
+    title = 'insurance'
+    parameter_name = 'insurance_multi'
+    field_path = 'payment_type__insurance'
+
+    def lookups(self, request, model_admin):
+        return PaymentType._meta.get_field('insurance').choices
+
+
+class ServiceTypeCodeMultiSelectFilter(MultiSelectListFilter):
+    title = 'service type code'
+    parameter_name = 'service_type_code_multi'
+    field_path = 'payment_type__service_type__code'
+
+    def lookups(self, request, model_admin):
+        return (
+            ServiceType.objects
+            .filter(payment_types__employee_records__isnull=False)
+            .distinct()
+            .order_by('code')
+            .values_list('code', 'code')
+        )
+
+
+class LocationMultiSelectFilter(MultiSelectListFilter):
+    title = 'location'
+    parameter_name = 'location_multi'
+    field_path = 'location'
+
+    def lookups(self, request, model_admin):
+        return (
+            EmployeeRecord.objects
+            .exclude(location='')
+            .order_by('location')
+            .values_list('location', 'location')
+            .distinct()
+        )
 
 
 class ServiceTypeSpecializationInline(admin.TabularInline):
@@ -147,10 +267,10 @@ class EmployeeRecordAdmin(admin.ModelAdmin):
 
     list_filter = (
         ('date', DateRangeFilter),
-        'payment_type__service_type__code',
-        'payment_type__insurance',
-        'payment_type__file',
-        'location',
+        PaymentTypeMultiSelectFilter,
+        InsuranceMultiSelectFilter,
+        ServiceTypeCodeMultiSelectFilter,
+        LocationMultiSelectFilter,
         'is_session',
         'created_by',
     )
