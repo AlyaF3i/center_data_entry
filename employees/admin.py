@@ -120,8 +120,6 @@ class PaymentTypeMultiSelectFilter(MultiSelectListFilter):
         'payment_type',
         'payment_type__exact',
         'payment_type__id__exact',
-        'insurance_multi',
-        'service_type_code_multi',
     )
 
     def queryset(self, request, queryset):
@@ -184,10 +182,6 @@ class InsuranceMultiSelectFilter(MultiSelectListFilter):
     title = 'insurance'
     parameter_name = 'insurance_multi'
     field_path = 'payment_type__insurance'
-    extra_remove_parameters = (
-        'employee_record_payment_types',
-        'payment_type_multi',
-    )
 
     def lookups(self, request, model_admin):
         return PaymentType._meta.get_field('insurance').choices
@@ -197,11 +191,7 @@ class ServiceTypeCodeMultiSelectFilter(MultiSelectListFilter):
     title = 'service type code'
     parameter_name = 'service_type_code_multi'
     field_path = 'payment_type__service_type__code'
-    extra_remove_parameters = (
-        'payment_type__service_type__code__exact',
-        'employee_record_payment_types',
-        'payment_type_multi',
-    )
+    extra_remove_parameters = ('payment_type__service_type__code__exact',)
 
     def lookups(self, request, model_admin):
         return (
