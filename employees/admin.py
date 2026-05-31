@@ -28,6 +28,7 @@ class MultiSelectListFilter(admin.SimpleListFilter):
     """Admin sidebar filter that allows several values in one query parameter."""
 
     field_path = None
+    extra_remove_parameters = ()
 
     def encode_value(self, value):
         raw_value = str(value).encode('utf-8')
@@ -52,11 +53,20 @@ class MultiSelectListFilter(admin.SimpleListFilter):
             return queryset
         return queryset.filter(**{f'{self.field_path}__in': values})
 
+    def remove_parameters(self):
+        return [
+            self.parameter_name,
+            self.field_path,
+            f'{self.field_path}__exact',
+            f'{self.field_path}__id__exact',
+            *self.extra_remove_parameters,
+        ]
+
     def choices(self, changelist):
         selected = set(self.token_list())
         yield {
             'selected': not selected,
-            'query_string': changelist.get_query_string(remove=[self.parameter_name]),
+            'query_string': changelist.get_query_string(remove=self.remove_parameters()),
             'display': 'All',
         }
 
@@ -71,9 +81,9 @@ class MultiSelectListFilter(admin.SimpleListFilter):
             if next_selected:
                 query_string = changelist.get_query_string({
                     self.parameter_name: ','.join(sorted(next_selected)),
-                })
+                }, remove=self.remove_parameters())
             else:
-                query_string = changelist.get_query_string(remove=[self.parameter_name])
+                query_string = changelist.get_query_string(remove=self.remove_parameters())
 
             yield {
                 'selected': lookup in selected,
@@ -117,6 +127,7 @@ class ServiceTypeCodeMultiSelectFilter(MultiSelectListFilter):
     title = 'service type code'
     parameter_name = 'service_type_code_multi'
     field_path = 'payment_type__service_type__code'
+    extra_remove_parameters = ('payment_type__service_type__code__exact',)
 
     def lookups(self, request, model_admin):
         return (
@@ -282,6 +293,25 @@ class EmployeeRecordAdmin(admin.ModelAdmin):
     )
 
     ordering = ('-date',)
+
+    def lookup_allowed(self, lookup, value, request=None):
+        allowed_lookups = {
+            'payment_type',
+            'payment_type__exact',
+            'payment_type__id__exact',
+            'payment_type__service_type__code',
+            'payment_type__service_type__code__exact',
+            'payment_type__insurance',
+            'payment_type__insurance__exact',
+            'payment_type__file',
+            'payment_type__file__exact',
+            'payment_type__file__id__exact',
+            'location',
+            'location__exact',
+        }
+        if lookup in allowed_lookups:
+            return True
+        return super().lookup_allowed(lookup, value, request)
 
 
 class EmployeeProfileInline(admin.StackedInline):
