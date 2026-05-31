@@ -17,6 +17,7 @@ import base64
 import os
 from django.urls import path
 from django.conf import settings
+from django.db.models import Q
 from django.http import FileResponse, HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
 from rangefilter.filters import DateRangeFilter
@@ -27,6 +28,7 @@ User = get_user_model()
 class MultiSelectListFilter(admin.SimpleListFilter):
     """Admin sidebar filter that allows several values in one query parameter."""
 
+    template = 'admin/multi_select_filter.html'
     field_path = None
     extra_remove_parameters = ()
 
@@ -95,20 +97,51 @@ class MultiSelectListFilter(admin.SimpleListFilter):
 class PaymentTypeMultiSelectFilter(MultiSelectListFilter):
     title = 'payment type'
     parameter_name = 'payment_type_multi'
-    field_path = 'payment_type'
+    extra_remove_parameters = ('payment_type', 'payment_type__exact', 'payment_type__id__exact')
+
+    def queryset(self, request, queryset):
+        values = self.value_list()
+        if not values:
+            return queryset
+
+        query = Q()
+        for value in values:
+            try:
+                file_id, insurance, service_type_id = value.split(':', 2)
+            except ValueError:
+                continue
+            query |= Q(
+                payment_type__file_id=file_id,
+                payment_type__insurance=insurance,
+                payment_type__service_type_id=service_type_id,
+            )
+
+        if not query:
+            return queryset
+        return queryset.filter(query)
 
     def lookups(self, request, model_admin):
         payment_types = (
             PaymentType.objects
             .filter(employee_records__isnull=False)
-            .select_related('file', 'service_type', 'file__group__center', 'file__group')
+            .values(
+                'file_id',
+                'file__number',
+                'insurance',
+                'service_type_id',
+                'service_type__code',
+            )
             .distinct()
             .order_by('file__number', 'insurance', 'service_type__code')
         )
         return [
-            (payment_type.pk, (
-                f'{payment_type.file.number} - '
-                f'{payment_type.insurance}/{payment_type.service_type.code}'
+            ((
+                f"{payment_type['file_id']}:"
+                f"{payment_type['insurance']}:"
+                f"{payment_type['service_type_id']}"
+            ), (
+                f"{payment_type['file__number']} - "
+                f"{payment_type['insurance']}/{payment_type['service_type__code']}"
             ))
             for payment_type in payment_types
         ]
