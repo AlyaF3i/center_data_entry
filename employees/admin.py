@@ -31,6 +31,19 @@ class MultiSelectListFilter(admin.SimpleListFilter):
     template = 'admin/multi_select_filter.html'
     field_path = None
     extra_remove_parameters = ()
+    legacy_parameter_names = ()
+
+    def __init__(self, request, params, model, model_admin):
+        if self.parameter_name not in params:
+            for parameter_name in self.legacy_parameter_names:
+                if parameter_name in params:
+                    params[self.parameter_name] = params[parameter_name]
+                    break
+
+        for parameter_name in self.legacy_parameter_names:
+            params.pop(parameter_name, None)
+
+        super().__init__(request, params, model, model_admin)
 
     def encode_value(self, value):
         raw_value = str(value).encode('utf-8')
@@ -56,7 +69,11 @@ class MultiSelectListFilter(admin.SimpleListFilter):
         return queryset.filter(**{f'{self.field_path}__in': values})
 
     def remove_parameters(self):
-        parameters = [self.parameter_name, *self.extra_remove_parameters]
+        parameters = [
+            self.parameter_name,
+            *self.legacy_parameter_names,
+            *self.extra_remove_parameters,
+        ]
         if self.field_path:
             parameters.extend([
                 self.field_path,
@@ -97,7 +114,8 @@ class MultiSelectListFilter(admin.SimpleListFilter):
 
 class PaymentTypeMultiSelectFilter(MultiSelectListFilter):
     title = 'payment type'
-    parameter_name = 'payment_type_multi'
+    parameter_name = 'employee_record_payment_types'
+    legacy_parameter_names = ('payment_type_multi',)
     extra_remove_parameters = ('payment_type', 'payment_type__exact', 'payment_type__id__exact')
 
     def queryset(self, request, queryset):
