@@ -213,16 +213,6 @@ class ServiceTypeSpecializationAdmin(admin.ModelAdmin):
     list_filter  = ('service_type', 'specialization')
 
 
-# @admin.register(PaymentType)
-# class PaymentTypeAdmin(admin.ModelAdmin):
-#     list_display    = (
-#         'file', 'service_type', 'insurance',
-#         'num_of_session', 'sessions_used', 'sessions_remaining'
-#     )
-#     list_filter     = ('file__group__center', 'file__group', 'service_type__code', 'insurance')
-#     search_fields   = ('file__number',)
-#     ordering        = ('-created_at',)
-
 @admin.register(PaymentType)
 class PaymentTypeAdmin(admin.ModelAdmin):
     autocomplete_fields = ('file',)  # <— type a file number to search
